@@ -115,20 +115,23 @@ abstract class Kli  {
 					continue
 				}
 				if ( option is ValueOption<*> ){
-					option.isDefined = true
 					// when the argument string contains more characters they are assumed
 					// to be the actual option value; otherwise the next argument will be taken
 					// as the option value string.
-					if (arg.length > argsIndex) {
+					if (arg.length > optionIndex+1) {
 						option.parseValue( arg.substring(optionIndex+1) )
 						// todo: test when this substring is empty
+						option.isDefined = true
 						return argsIndex + 1
 					}
-					if ( argsIndex >= (args.size-1) ) {
+					// check if there is no additional argument to use as option value
+					// (to prevent a 'out of bounds' exception)
+					if ( argsIndex >= args.size ) {
 						logger.error("Unable to find value string for option '${option.name}'. Ignored.")
 						return argsIndex + 1
 					}
 					option.parseValue( args[argsIndex + 1] )
+					option.isDefined = true
 					return argsIndex + 2
 				}
 				logger.error( "Unexpected option class: ${option.javaClass.kotlin}. Parsing result might be im corrupted." )
