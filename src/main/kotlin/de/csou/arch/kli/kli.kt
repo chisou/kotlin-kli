@@ -17,18 +17,18 @@ abstract class Kli  {
 		fun optionSyntax ( option:Option ) : String {
 			val syntaxBuilder = StringBuilder()
 			val valueString = if ( option is ValueOption<*> ) "<${option.name}>" else null
-			if ( option.shortId != null ) {
+			if ( option.shortIds.isNotEmpty() ) {
 				builder.append( '-' )
-				builder.append( option.shortId )
+				builder.append( option.shortIds )
 				if ( valueString != null ) {
 					builder.append(' ')
 					builder.append(valueString)
 				}
 			}
 			builder.append( "  " )
-			if ( option.longId != null ) {
+			if ( option.longIds.isNotEmpty() ) {
 				builder.append(  "--" )
-				builder.append( option.longId )
+				builder.append( option.longIds )
 				if ( valueString != null ) {
 					builder.append( '=' )
 					builder.append( valueString )
@@ -37,12 +37,12 @@ abstract class Kli  {
 			return syntaxBuilder.toString()
 		}
 
-		val optionSytaxes = options.map( ::optionSyntax )
-		val maxLength = optionSytaxes.map{ it.length }.max() ?: 0
+		val optionSyntaxes = options.map( ::optionSyntax )
+		val maxLength = optionSyntaxes.map{ it.length }.max() ?: 0
 
 		options.forEachIndexed { i, option ->
 			builder.append( "  " ) // indent
-			builder.append( optionSytaxes[i].padEnd( maxLength, ' ' ) )
+			builder.append( optionSyntaxes[i].padEnd( maxLength, ' ' ) )
 			builder.append( "  " ) // space
 			builder.append( option.description )
 		}
@@ -54,8 +54,13 @@ abstract class Kli  {
 		mutableValues.clear()
 		// all options are defined as first class members of a derived instance
 		val options = this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>()
-		val optionsByShort = options.associateBy { it.shortId }
-		val optionsByLong = options.associateBy { it.longId }
+		// TODO: can this be any better? groupby on options maybe?
+		val optionsByShort = mutableMapOf<Char,Option>()
+		val optionsByLong = mutableMapOf<String,Option>()
+		options.forEach { option ->
+			option.shortIds.forEach { optionsByShort[it]=option }
+			option.longIds.forEach { optionsByLong[it]=option }
+		}
 
 		// all option handling sub routines potentially move the pointer (index)
 		// within the arguments array. Therefore they are fed with the entire array

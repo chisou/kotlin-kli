@@ -31,7 +31,7 @@ dependencies {
     testImplementation("io.kotlintest:kotlintest:$kotlintestVersion")
     testImplementation("org.amshove.kluent:kluent:$kluentVersion")
 
-    testImplementation("io.kotlintest:kotlintest-runner-junit5:$junitRunnerVersion")
+    testRuntime("io.kotlintest:kotlintest-runner-junit5:$junitRunnerVersion")
 }
 
 publishing {
