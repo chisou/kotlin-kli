@@ -1,4 +1,4 @@
-package de.csou.arch.kli
+package org.chisou.arch.kli
 
 import org.slf4j.LoggerFactory
 import java.io.PrintWriter
@@ -36,7 +36,7 @@ abstract class Kli  {
 				logger.warn("Unknown option '$optionString' ignored.")
 				return index + 1
 			}
-			if (validate && option is HelpOption ) {
+			if (validate && option is HelpOption) {
 				option.printLongHelp(options)
 				// no need to continue -> skip over args
 				return args.size
@@ -78,7 +78,7 @@ abstract class Kli  {
 					optionIndex += 1
 					continue
 				}
-				if (validate && option is HelpOption ) {
+				if (validate && option is HelpOption) {
 					option.printLongHelp(options)
 					// no need to continue -> skip over args
 					return args.size
@@ -91,7 +91,7 @@ abstract class Kli  {
 					optionIndex += 1
 					continue
 				}
-				if ( option is ValueOption<*> ){
+				if ( option is ValueOption<*>){
 					// when the argument string contains more characters they are assumed
 					// to be the actual option value; otherwise the next argument will be taken
 					// as the option value string.

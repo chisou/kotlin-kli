@@ -1,4 +1,4 @@
-package de.csou.arch.kli
+package org.chisou.arch.kli
 
 import java.io.PrintWriter
 
@@ -20,7 +20,7 @@ abstract class HelpOption (description: String, shortId:Char?, longId:String?) :
     internal abstract fun printLongHelp (options:List<Option>, writer:PrintWriter=PrintWriter(System.out))
 }
 
-class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
+class StandardHelpOption (private val formatter: Formatter = StandardFormatter()) :
     HelpOption("Display this help screen.", 'h', "help")
 {
     private val INDENT_LEN = 3
@@ -44,12 +44,19 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
     }
 
     override fun printLongHelp (options:List<Option>, writer:PrintWriter) {
-        // todo: print title
+        if ( title.isNotEmpty() ) {
+            writer.println(title)
+            writer.println()
+        }
         printUsages(writer)
         if ( usages.isNotEmpty() ) writer.println()
         printExamples(writer)
         if ( examples.isNotEmpty() ) writer.println()
         printOptions(options, writer)
+        if ( footer.isNotEmpty() ) {
+            writer.println()
+            writer.println(footer)
+        }
         writer.flush()
     }
 
@@ -80,8 +87,11 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
         //  General printing layout
         //   -x, --long-option   Description
 
+        fun calculateLength(option: Option) : Int =
+            option.longId?.length!! + if ( option.type.isNotEmpty() ) option.type.length + 1 else 0
+
         // determine the maximum long option length to be able to align descriptions
-        val maxLongOptionLength = options.map{ it.longId }.filterNotNull().map{ it.length }.max()!!
+        val maxLongOptionLength = options.filter{ it.longId!=null }.map(::calculateLength).max()!! + 2
 
         // the filler/gap to fill when there is no short option
         val shortFiller = spaces(INDENT_LEN+4)
@@ -99,8 +109,9 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
             }
             // print the long ID or a filler (plus alignment spaces)
             if (option.longId != null) {
-                writer.print("--${option.longId}")
-                val gap = (maxLongOptionLength - option.longId.length) + GAP_LEN
+                val optionString = "--" + option.longId + if (option.type.isNotEmpty()) "=" + option.type else ""
+                writer.print(optionString)
+                val gap = (maxLongOptionLength - optionString.length) + GAP_LEN
                 writer.print(spaces(gap))
             } else {
                 writer.print(longFiller)

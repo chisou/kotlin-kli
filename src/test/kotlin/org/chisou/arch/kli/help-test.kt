@@ -1,4 +1,4 @@
-package de.csou.arch.kli
+package org.chisou.arch.kli
 
 import io.kotlintest.specs.FreeSpec
 import org.amshove.kluent.*
@@ -8,13 +8,13 @@ import java.io.StringWriter
 
 class HelpSpecs : FreeSpec({
 
-    fun getShortHelp (helpOption:StandardHelpOption) =
+    fun getShortHelp (helpOption: StandardHelpOption) =
         with(StringWriter()) {
             helpOption.printShortHelp(listOf(), PrintWriter(this))
             this.toString().toLowerCase()
         }
 
-    fun getLongHelp (helpOption:StandardHelpOption, options:List<Option>) =
+    fun getLongHelp (helpOption: StandardHelpOption, options:List<Option>) =
         with(StringWriter()) {
             helpOption.printLongHelp(options, PrintWriter(this))
             this.toString().toLowerCase()
@@ -115,7 +115,14 @@ class HelpSpecs : FreeSpec({
 
     "Given a single option ..." - {
         val helpOption = StandardHelpOption()
-        val longText = getLongHelp(helpOption, listOf(StringOption("string", "description", 's', "long" )))
+        val longText = getLongHelp(helpOption, listOf(
+            StringOption(
+                "string",
+                "description",
+                's',
+                "long"
+            )
+        ))
         "There should be a options header" {
             longText.lines().first() `should end with` ":"
         }
@@ -135,8 +142,8 @@ class HelpSpecs : FreeSpec({
     "Given multiple options ..." - {
         val helpOption = StandardHelpOption()
         val options = listOf(
-            StringOption("","description1", 'a', "a"),
-            StringOption("","description2", 'b', "option-b")
+            StringOption("", "description1", 'a', "a"),
+            StringOption("", "description2", 'b', "option-b")
         )
         val longText = getLongHelp(helpOption, options)
         val lines = longText.lines().filter{ it.contains("description") }

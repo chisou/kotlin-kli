@@ -1,4 +1,4 @@
-package de.csou.arch.kli
+package org.chisou.arch.kli
 
 import io.kotlintest.specs.FreeSpec
 import org.amshove.kluent.*
@@ -40,8 +40,8 @@ class KliSpecs : FreeSpec ({
 			tests.forEach{ testData ->
 				testData.desc  {
 					val kli = object : Kli() {
-						val a = FlagOption("", 'a', "" )
-						val b = FlagOption("", 'b', "" )
+						val a = FlagOption("", 'a', "")
+						val b = FlagOption("", 'b', "")
 					}
 					kli.parse ( args=testData.args.split( " " ).toTypedArray() )
 					assert( kli.a.isDefined )
@@ -60,8 +60,8 @@ class KliSpecs : FreeSpec ({
 			tests.forEach{ testData ->
 				testData.desc {
 					val kli = object : Kli() {
-						val a = StringOption( "a", "", 'a', "" )
-						val b = StringOption( "b", "", 'b', "" )
+						val a = StringOption("a", "", 'a', "")
+						val b = StringOption("b", "", 'b', "")
 					}
 					kli.parse ( args=testData.args.split( " " ).toTypedArray() )
 					kli.a.isDefined `should be` true

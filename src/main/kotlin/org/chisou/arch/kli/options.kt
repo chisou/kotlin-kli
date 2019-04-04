@@ -1,4 +1,4 @@
-package de.csou.arch.kli
+package org.chisou.arch.kli
 
 import java.io.File
 

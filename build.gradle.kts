@@ -5,8 +5,8 @@ plugins {
     `maven-publish`
 }
 
-group = "de.csou.arch"
-version = "1.1"
+group = "org.chisou.arch"
+version = "1.2"
 val artifact = "kli"
 
 val slf4jVersion  = "1.7.26"

@@ -1,10 +1,19 @@
 import de.csou.arch.kli.*
+import org.chisou.arch.kli.FlagOption
+import org.chisou.arch.kli.Kli
+import org.chisou.arch.kli.StringOption
 
 fun main (args:Array<String>) {
 
-    val kli = object:Kli() {
-        val stringOption = StringOption(type="STRING", description="The string to process.", shortId='s', longId="input-string")
-        val progressiveFlag = FlagOption("Whether to process the string in progressive mode", 'p', "progressive")
+    val kli = object: Kli() {
+        val stringOption = StringOption(
+            type = "STRING",
+            description = "The string to process.",
+            shortId = 's',
+            longId = "input-string"
+        )
+        val progressiveFlag =
+            FlagOption("Whether to process the string in progressive mode", 'p', "progressive")
         val modernFlag = FlagOption("Whether to process the string in modern mode.", 'm', "modern")
     }
 
