@@ -40,8 +40,8 @@ class KliSpecs : FreeSpec ({
 			tests.forEach{ testData ->
 				testData.desc  {
 					val kli = object : Kli() {
-						val a = FlagOption( "a", "", 'a', "" )
-						val b = FlagOption( "b", "", 'b', "" )
+						val a = FlagOption("", 'a', "" )
+						val b = FlagOption("", 'b', "" )
 					}
 					kli.parse ( args=testData.args.split( " " ).toTypedArray() )
 					assert( kli.a.isDefined )
@@ -50,7 +50,7 @@ class KliSpecs : FreeSpec ({
 			}
 		}
 
-		"A couple of defined value options" - {
+		"Given a couple of defined value options" - {
 
 			val tests = listOf(
 					TestData( args="-a1 -b2", desc = "It should parse concatenated options" ),
@@ -81,7 +81,7 @@ class KliSpecs : FreeSpec ({
 			tests.forEach { testData ->
 				testData.desc {
 					val kli = object : Kli() {
-						val a = FlagOption("a", "", 'a', "")
+						val a = FlagOption("", 'a', "")
 						val b = StringOption("b", "", 'b', "")
 					}
 					kli.parse(args = testData.args.split(" ").toTypedArray())

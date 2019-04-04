@@ -1,11 +1,13 @@
 package de.csou.arch.kli
 
 import org.slf4j.LoggerFactory
+import java.io.PrintWriter
 import kotlin.reflect.full.declaredMemberProperties
 
 abstract class Kli  {
 
-	private val logger = LoggerFactory.getLogger( "de.csou.arch.kli.Kli" )
+	private enum class ExitCode(val n:Int) { ANY_ERROR(1), CLI_ERROR(2)	}
+	private val logger = LoggerFactory.getLogger(this.javaClass.`package`.name)
 
 	private val mutableValues = mutableListOf<String>()
 	val values:List<String> = mutableValues
@@ -16,7 +18,7 @@ abstract class Kli  {
 
 		fun optionSyntax ( option:Option ) : String {
 			val syntaxBuilder = StringBuilder()
-			val valueString = if ( option is ValueOption<*> ) "<${option.name}>" else null
+			val valueString = if ( option is ValueOption<*> ) "<${option.type}>" else null
 			if ( option.shortIds.isNotEmpty() ) {
 				builder.append( '-' )
 				builder.append( option.shortIds )
@@ -50,11 +52,12 @@ abstract class Kli  {
 		return builder.toString()
 	}
 
-	fun parse ( args:Array<String> ) {
+	fun parse (args:Array<String>, validate:Boolean=false) {
+
 		mutableValues.clear()
+
 		// all options are defined as first class members of a derived instance
 		val options = this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>()
-		// TODO: can this be any better? groupby on options maybe?
 		val optionsByShort = mutableMapOf<Char,Option>()
 		val optionsByLong = mutableMapOf<String,Option>()
 		options.forEach { option ->
@@ -74,6 +77,11 @@ abstract class Kli  {
 				logger.warn("Unknown option '$optionString' ignored.")
 				return index + 1
 			}
+			if (validate && option is StandardHelpOption ) {
+				option.printLongHelp(options, PrintWriter(System.out))
+				// no need to continue -> skip over args
+				return args.size
+			}
 			if (option is FlagOption) {
 				option.isDefined = true
 				return index + 1
@@ -85,11 +93,11 @@ abstract class Kli  {
 							optionString.substringAfter('=')
 						} else {
 							j += 1
-							args[j]
 							// todo: check for AIOOB
+							args[j]
 						}
 				if (optionValue.isBlank()) {
-					logger.error("Unable to find value string for option '${option.name}'. Ignored.")
+					logger.error("Unable to find value string for option '${option.type}'. Ignored.")
 				}
 				option.isDefined = true
 				option.parseValue(optionValue)
@@ -110,6 +118,11 @@ abstract class Kli  {
 					logger.warn("Unknown option character '$optionCharacter' ignored.")
 					optionIndex += 1
 					continue
+				}
+				if (validate && option is StandardHelpOption ) {
+					option.printLongHelp(options, PrintWriter(System.out))
+					// no need to continue -> skip over args
+					return args.size
 				}
 				// when the option is a flag, we will check for more options (within this
 				// argument string); otherwise we will resolve a value and are done for
@@ -132,7 +145,7 @@ abstract class Kli  {
 					// check if there is no additional argument to use as option value
 					// (to prevent a 'out of bounds' exception)
 					if ( argsIndex >= args.size ) {
-						logger.error("Unable to find value string for option '${option.name}'. Ignored.")
+						logger.error("Unable to find value string for option '${option.type}'. Ignored.")
 						return argsIndex + 1
 					}
 					option.parseValue( args[argsIndex + 1] )
