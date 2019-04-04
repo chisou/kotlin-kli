@@ -1,5 +1,6 @@
 # kotlin-kli
-The kotlin-kli libray offers sleak command line parsing for the Kotlin programming language. 
+The kotlin-kli libray offers sleak command line parsing for the Kotlin programming language. It uses class introspection to automatically discover defined options in your code.
+
 It's primary goal is ease-of-use with minimal configuration overhead.
 
 ## Features
