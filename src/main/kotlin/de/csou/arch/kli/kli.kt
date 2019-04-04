@@ -7,49 +7,13 @@ import kotlin.reflect.full.declaredMemberProperties
 abstract class Kli  {
 
 	private enum class ExitCode(val n:Int) { ANY_ERROR(1), CLI_ERROR(2)	}
-	private val logger = LoggerFactory.getLogger(this.javaClass.`package`.name)
+	private val logger = LoggerFactory.getLogger("de.csou.arch.kli")
 
 	private val mutableValues = mutableListOf<String>()
 	val values:List<String> = mutableValues
 
-	fun  buildHelp() : String {
-		val options = this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>()
-		val builder = StringBuilder()
-
-		fun optionSyntax ( option:Option ) : String {
-			val syntaxBuilder = StringBuilder()
-			val valueString = if ( option is ValueOption<*> ) "<${option.type}>" else null
-			if ( option.shortIds.isNotEmpty() ) {
-				builder.append( '-' )
-				builder.append( option.shortIds )
-				if ( valueString != null ) {
-					builder.append(' ')
-					builder.append(valueString)
-				}
-			}
-			builder.append( "  " )
-			if ( option.longIds.isNotEmpty() ) {
-				builder.append(  "--" )
-				builder.append( option.longIds )
-				if ( valueString != null ) {
-					builder.append( '=' )
-					builder.append( valueString )
-				}
-			}
-			return syntaxBuilder.toString()
-		}
-
-		val optionSyntaxes = options.map( ::optionSyntax )
-		val maxLength = optionSyntaxes.map{ it.length }.max() ?: 0
-
-		options.forEachIndexed { i, option ->
-			builder.append( "  " ) // indent
-			builder.append( optionSyntaxes[i].padEnd( maxLength, ' ' ) )
-			builder.append( "  " ) // space
-			builder.append( option.description )
-		}
-
-		return builder.toString()
+	val options:List<Option> by lazy {
+		this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>()
 	}
 
 	fun parse (args:Array<String>, validate:Boolean=false) {
@@ -57,13 +21,8 @@ abstract class Kli  {
 		mutableValues.clear()
 
 		// all options are defined as first class members of a derived instance
-		val options = this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>()
-		val optionsByShort = mutableMapOf<Char,Option>()
-		val optionsByLong = mutableMapOf<String,Option>()
-		options.forEach { option ->
-			option.shortIds.forEach { optionsByShort[it]=option }
-			option.longIds.forEach { optionsByLong[it]=option }
-		}
+		val optionsByShort = options.associateBy { it.shortId } // todo: how does this work for nulls
+		val optionsByLong = options.associateBy { it.longId } // todo: how does this work for nulls
 
 		// all option handling sub routines potentially move the pointer (index)
 		// within the arguments array. Therefore they are fed with the entire array
@@ -77,8 +36,8 @@ abstract class Kli  {
 				logger.warn("Unknown option '$optionString' ignored.")
 				return index + 1
 			}
-			if (validate && option is StandardHelpOption ) {
-				option.printLongHelp(options, PrintWriter(System.out))
+			if (validate && option is HelpOption ) {
+				option.printLongHelp(options)
 				// no need to continue -> skip over args
 				return args.size
 			}
@@ -119,8 +78,8 @@ abstract class Kli  {
 					optionIndex += 1
 					continue
 				}
-				if (validate && option is StandardHelpOption ) {
-					option.printLongHelp(options, PrintWriter(System.out))
+				if (validate && option is HelpOption ) {
+					option.printLongHelp(options)
 					// no need to continue -> skip over args
 					return args.size
 				}

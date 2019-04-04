@@ -1,6 +1,5 @@
 package de.csou.arch.kli
 
-import sun.plugin2.message.GetAppletMessage
 import java.io.PrintWriter
 
 abstract class Formatter {
@@ -14,18 +13,19 @@ class StandardFormatter : Formatter() {
     }
 }
 
-abstract class HelpOption (description: String, shortIds:List<Char>, longIds:List<String>) :
-    FlagOption(description, shortIds, longIds)
+abstract class HelpOption (description: String, shortId:Char?, longId:String?) :
+    FlagOption(description, shortId, longId)
 {
-    internal abstract fun printShortHelp (options:List<Option>, writer:PrintWriter)
-    internal abstract fun printLongHelp (options:List<Option>, writer:PrintWriter)
+    internal abstract fun printShortHelp (options:List<Option>, writer:PrintWriter=PrintWriter(System.out))
+    internal abstract fun printLongHelp (options:List<Option>, writer:PrintWriter=PrintWriter(System.out))
 }
 
 class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
-    HelpOption("Display this help screen.", listOf('h', '?'), listOf("help"))
+    HelpOption("Display this help screen.", 'h', "help")
 {
-    private val INDENT = 3
-    private val GAP = 3
+    private val INDENT_LEN = 3
+    private val GAP_LEN = 3
+    private val INDENT_STRING = spaces(INDENT_LEN)
 
     private var title = ""
     private var footer = ""
@@ -40,6 +40,7 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
     override fun printShortHelp (options:List<Option>, writer:PrintWriter) {
         printUsages(writer)
         writer.println( "Try option '-h' or '--help' for more information." )
+        writer.flush()
     }
 
     override fun printLongHelp (options:List<Option>, writer:PrintWriter) {
@@ -49,6 +50,7 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
         printExamples(writer)
         if ( examples.isNotEmpty() ) writer.println()
         printOptions(options, writer)
+        writer.flush()
     }
 
     private fun printUsages (writer:PrintWriter) {
@@ -56,18 +58,16 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
             writer.println( "Usage: ${usages.first()}" )
         if ( usages.size > 1 ) {
             writer.println("Usages:")
-            val indent = "           ".substring(0,INDENT)
-            usages.forEach { writer.println(indent + it) }
+            usages.forEach { writer.println(INDENT_STRING + it) }
         }
     }
 
     private fun printExamples (writer:PrintWriter) {
         if (examples.isNotEmpty()) {
             writer.println("Examples:")
-            val offset = INDENT + examples.map{ it.first.length }.max()!! + GAP
-            val indent = "           ".substring(0,INDENT)
+            val offset = INDENT_LEN + examples.map{ it.first.length }.max()!! + GAP_LEN
             examples.forEach { (command, description) ->
-                writer.print((indent + command).padEnd(offset))
+                writer.print((INDENT_STRING + command).padEnd(offset))
                 writer.println(description)
             }
         }
@@ -75,62 +75,45 @@ class StandardHelpOption (private val formatter:Formatter=StandardFormatter()) :
 
     private fun printOptions (options:List<Option>, writer:PrintWriter) {
 
+        if (options.isEmpty()) return
+
+        //  General printing layout
+        //   -x, --long-option   Description
+
+        // determine the maximum long option length to be able to align descriptions
+        val maxLongOptionLength = options.map{ it.longId }.filterNotNull().map{ it.length }.max()!!
+
+        // the filler/gap to fill when there is no short option
+        val shortFiller = spaces(INDENT_LEN+4)
+        // the filler/gap to fill when there is no long option
+        val longFiller = spaces(2+maxLongOptionLength+GAP_LEN)
+
+        writer.println("Options:")
+        options.forEach { option ->
+            // print the short ID or a filler
+            if (option.shortId != null) {
+                writer.print(INDENT_STRING)
+                writer.print("-${option.shortId}, ")
+            } else {
+                writer.print(shortFiller)
+            }
+            // print the long ID or a filler (plus alignment spaces)
+            if (option.longId != null) {
+                writer.print("--${option.longId}")
+                val gap = (maxLongOptionLength - option.longId.length) + GAP_LEN
+                writer.print(spaces(gap))
+            } else {
+                writer.print(longFiller)
+            }
+            // print the description
+            writer.println(option.description)
+        }
+
+
     }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    private fun printHelp_Lexical (options:List<Option>) {
-        val builder = StringBuilder()
-        fun optionSyntax ( option:Option ) : String {
-            val syntaxBuilder = StringBuilder()
-            val valueString = if ( option is ValueOption<*> ) "<${option.type}>" else null
-            if ( option.shortIds.isNotEmpty() ) {
-                builder.append( '-' )
-                builder.append( option.shortIds )
-                if ( valueString != null ) {
-                    builder.append(' ')
-                    builder.append(valueString)
-                }
-            }
-            builder.append( "  " )
-            if ( option.longIds.isNotEmpty() ) {
-                builder.append(  "--" )
-                builder.append( option.longIds )
-                if ( valueString != null ) {
-                    builder.append( '=' )
-                    builder.append( valueString )
-                }
-            }
-            return syntaxBuilder.toString()
-        }
-
-        val optionSyntaxes = options.map( ::optionSyntax )
-        val maxLength = optionSyntaxes.map{ it.length }.max() ?: 0
-
-        options.forEachIndexed { i, option ->
-            builder.append( "  " ) // indent
-            builder.append( optionSyntaxes[i].padEnd( maxLength, ' ' ) )
-            builder.append( "  " ) // space
-            builder.append( option.description )
-        }
-
-//        return builder.toString()
+    private fun spaces ( n:Int ) : String {
+        return "                                            ".substring(0, n)
     }
 
 }

@@ -113,6 +113,37 @@ class HelpSpecs : FreeSpec({
         }
     }
 
+    "Given a single option ..." - {
+        val helpOption = StandardHelpOption()
+        val longText = getLongHelp(helpOption, listOf(StringOption("string", "description", 's', "long" )))
+        "There should be a options header" {
+            longText.lines().first() `should end with` ":"
+        }
+        // description will be printed:
+        val line = longText.lines().find{ it.contains("description") }!!
+        "The short option ID should be printed" {
+            line `should contain` "-s"
+        }
+        "The long option ID should be printed" {
+            line `should contain` "--long"
+        }
+        "The line should be indented" {
+            line `should start with` " "
+        }
+    }
 
+    "Given multiple options ..." - {
+        val helpOption = StandardHelpOption()
+        val options = listOf(
+            StringOption("","description1", 'a', "a"),
+            StringOption("","description2", 'b', "option-b")
+        )
+        val longText = getLongHelp(helpOption, options)
+        val lines = longText.lines().filter{ it.contains("description") }
+        "The description texts should be aligned" {
+            val offsets = lines.map{ it.indexOf("description") }.distinct()
+            offsets.size `should equal` 1
+        }
+    }
 
 })
