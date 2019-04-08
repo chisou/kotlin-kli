@@ -1,8 +1,4 @@
-import de.csou.arch.kli.*
-import org.chisou.arch.kli.FlagOption
-import org.chisou.arch.kli.Kli
-import org.chisou.arch.kli.StandardHelpOption
-import org.chisou.arch.kli.StringOption
+import org.chisou.arch.kli.*
 
 fun main (args:Array<String>) {
 
@@ -14,16 +10,9 @@ fun main (args:Array<String>) {
             .addExample("app -pf FILE", "Processing file FILE in progressive mode.")
             .setFooter("""Report bugs on: https://github.com/chisou/kotlin-kli/issues
                          |Released under the Apache License 2.0""".trimMargin())
-        val stringOption = StringOption(
-            type = "STRING",
-            description = "The string to process.",
-            shortId = 's',
-            longId = "input-string",
-            isMandatory = true
-        )
-        val progressiveFlag =
-            FlagOption("Whether to process the string in progressive mode", 'p', "progressive")
-        val modernFlag = FlagOption("Whether to process the string in modern mode.", 'm', "modern")
+        val stringOption = StringOption(type="STRING", description="The string to process.", shortId='s', longId="input-string", isMandatory=true)
+        val progressiveFlag = FlagOption("Whether to process the string in progressive mode", null, "progressive")
+        val modernFlag = FlagOption("Whether to process the string in modern mode.", 'm')
     }
     // alternative 1, automatic help + options checks
     kli.parse(args, validate=true)
