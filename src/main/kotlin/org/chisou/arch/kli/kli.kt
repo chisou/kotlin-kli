@@ -1,8 +1,9 @@
 package org.chisou.arch.kli
 
+import com.sun.javaws.exceptions.InvalidArgumentException
 import org.slf4j.LoggerFactory
-import java.io.PrintWriter
 import kotlin.reflect.full.declaredMemberProperties
+import kotlin.system.exitProcess
 
 abstract class Kli  {
 
@@ -13,11 +14,11 @@ abstract class Kli  {
 	val values:List<String> = mutableValues
 
 	val options:List<Option> by lazy {
-		this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>()
-	}
+		this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>() }
 
 	fun parse (args:Array<String>, validate:Boolean=false) {
 
+		var valid = true
 		mutableValues.clear()
 
 		// all options are defined as first class members of a derived instance
@@ -36,11 +37,6 @@ abstract class Kli  {
 				logger.warn("Unknown option '$optionString' ignored.")
 				return index + 1
 			}
-			if (validate && option is HelpOption) {
-				option.printLongHelp(options)
-				// no need to continue -> skip over args
-				return args.size
-			}
 			if (option is FlagOption) {
 				option.isDefined = true
 				return index + 1
@@ -56,10 +52,15 @@ abstract class Kli  {
 							args[j]
 						}
 				if (optionValue.isBlank()) {
-					logger.error("Unable to find value string for option '${option.type}'. Ignored.")
+					logger.error("Unable to find value string for option '${option.longId}'. Ignored.")
 				}
 				option.isDefined = true
 				option.parseValue(optionValue)
+				if(validate && !option.isValid()) {
+					val hint = with(option.invalidityHint()) { if (isNotEmpty()) ": " + this else "." }
+					logger.error("Invalid value for option '${option.longId}'" + hint )
+					valid = false
+				}
 				return j + 1
 			}
 			return index + 1
@@ -77,11 +78,6 @@ abstract class Kli  {
 					logger.warn("Unknown option character '$optionCharacter' ignored.")
 					optionIndex += 1
 					continue
-				}
-				if (validate && option is HelpOption) {
-					option.printLongHelp(options)
-					// no need to continue -> skip over args
-					return args.size
 				}
 				// when the option is a flag, we will check for more options (within this
 				// argument string); otherwise we will resolve a value and are done for
@@ -109,6 +105,11 @@ abstract class Kli  {
 					}
 					option.parseValue( args[argsIndex + 1] )
 					option.isDefined = true
+					if(validate && !option.isValid()) {
+						val hint = with(option.invalidityHint()) { if (isNotEmpty()) ": " + this else "." }
+						logger.error("Invalid value for option '${option.longId}'" + hint )
+						valid = false
+					}
 					return argsIndex + 2
 				}
 				logger.error( "Unexpected option class: ${option.javaClass.kotlin}. Parsing result might be im corrupted." )
@@ -131,6 +132,27 @@ abstract class Kli  {
 			} else {
 				mutableValues += arg
 				i+=1
+			}
+		}
+
+		/** Option validation & help text */
+
+		if (validate) {
+			// (1) verify whether all mandatory options have been provided
+			options.filter{ it.isMandatory && !it.isDefined }.forEach { option ->
+				// at least one of long ID or short ID is defined
+				val id = if (option.longId!=null) option.longId else option.shortId!!
+				logger.error( "Option '$id' must be defined." )
+				valid = false
+			}
+			val helpOption = options.find{ it is HelpOption } as HelpOption?
+			if (!valid) {
+				helpOption?.printShortHelp(options)
+				exitProcess(2)
+			}
+			if ( helpOption!=null && helpOption.isDefined ) {
+				helpOption.printLongHelp(options)
+				exitProcess(0)
 			}
 		}
 
