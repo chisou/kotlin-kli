@@ -27,7 +27,8 @@ dependencies {
     implementation(kotlin("reflect"))
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
 
-    testImplementation("org.slf4j:slf4j-nop:$slf4jVersion")
+    runtime("org.slf4j:slf4j-simple:$slf4jVersion")
+
     testImplementation("io.kotlintest:kotlintest:$kotlintestVersion")
     testImplementation("org.amshove.kluent:kluent:$kluentVersion")
 
