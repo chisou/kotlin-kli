@@ -90,7 +90,45 @@ class KliSpecs : FreeSpec ({
 					assert(kli.b.value == "2")
 				}
 			}
+		}
 
+		"Unknown flag options will be ignored ..." - {
+			val tests = listOf(
+				TestData(args="-a -x -b", desc="... using single options"),
+				TestData(args="-axb", desc="... using concatenated options"),
+				TestData(args="-a -xb", desc="... using mixed options")
+			)
+			tests.forEach { testData ->
+				testData.desc {
+					val kli = object : Kli() {
+						val a = FlagOption("", 'a', "")
+						val b = FlagOption("", 'b', "")
+					}
+					kli.parse(args = testData.args.split(" ").toTypedArray())
+					assert(kli.a.isDefined)
+					assert(kli.b.isDefined)
+				}
+			}
+		}
+
+		"Unknown value options will be ignored ..." - {
+			val tests = listOf(
+				TestData(args="-a1 -x2 -b3", desc="... using single options"),
+				TestData(args="-a1 -xb3", desc="... using concatenated options")
+			)
+			tests.forEach { testData ->
+				testData.desc {
+					val kli = object : Kli() {
+						val a = StringOption("", "", 'a', "")
+						val b = StringOption("", "", 'b', "")
+					}
+					kli.parse(args = testData.args.split(" ").toTypedArray())
+					kli.a.isDefined `should be` true
+					kli.b.isDefined `should be` true
+					kli.a.value `should equal` "1"
+					kli.b.value `should equal` "3"
+				}
+			}
 		}
 
 	}
