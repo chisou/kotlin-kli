@@ -1,6 +1,5 @@
 package org.chisou.arch.kli
 
-import com.sun.javaws.exceptions.InvalidArgumentException
 import org.slf4j.LoggerFactory
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.exitProcess
@@ -52,13 +51,12 @@ abstract class Kli  {
 							args[j]
 						}
 				if (optionValue.isBlank()) {
-					logger.error("Unable to find value string for option '${option.longId}'. Ignored.")
+					logger.error("Unable to find value string for option '${option.name}'. Ignored.")
 				}
 				option.isDefined = true
 				option.parseValue(optionValue)
 				if(validate && !option.isValid()) {
-					val hint = with(option.invalidityHint()) { if (isNotEmpty()) ": " + this else "." }
-					logger.error("Invalid value for option '${option.longId}'" + hint )
+					logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}" )
 					valid = false
 				}
 				return j + 1
@@ -100,14 +98,13 @@ abstract class Kli  {
 					// check if there is no additional argument to use as option value
 					// (to prevent a 'out of bounds' exception)
 					if ( argsIndex >= args.size ) {
-						logger.error("Unable to find value string for option '${option.type}'. Ignored.")
+						logger.error("Unable to find value string for option '${option.name}'. Ignored.")
 						return argsIndex + 1
 					}
 					option.parseValue( args[argsIndex + 1] )
 					option.isDefined = true
 					if(validate && !option.isValid()) {
-						val hint = with(option.invalidityHint()) { if (isNotEmpty()) ": " + this else "." }
-						logger.error("Invalid value for option '${option.longId}'" + hint )
+						logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}" )
 						valid = false
 					}
 					return argsIndex + 2
@@ -141,8 +138,7 @@ abstract class Kli  {
 			// (1) verify whether all mandatory options have been provided
 			options.filter{ it.isMandatory && !it.isDefined }.forEach { option ->
 				// at least one of long ID or short ID is defined
-				val id = if (option.longId!=null) option.longId else option.shortId!!
-				logger.error( "Option '$id' must be defined." )
+				logger.error( "Option '${option.name}' must be defined." )
 				valid = false
 			}
 			val helpOption = options.find{ it is HelpOption } as HelpOption?
