@@ -2,17 +2,6 @@ package org.chisou.arch.kli
 
 import java.io.PrintWriter
 
-abstract class Formatter {
-    abstract fun formatOptions (options:List<Option>) : String
-}
-
-class StandardFormatter : Formatter() {
-    override fun formatOptions (options:List<Option>) : String {
-
-        return ""
-    }
-}
-
 abstract class HelpOption (description: String, shortId:Char?, longId:String?) :
     FlagOption(description, shortId, longId)
 {
@@ -20,7 +9,7 @@ abstract class HelpOption (description: String, shortId:Char?, longId:String?) :
     internal abstract fun printLongHelp (options:List<Option>, writer:PrintWriter=PrintWriter(System.out))
 }
 
-class StandardHelpOption (private val formatter: Formatter = StandardFormatter()) :
+class StandardHelpOption :
     HelpOption("Display this help screen.", 'h', "help")
 {
     private val INDENT_LEN = 3
