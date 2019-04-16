@@ -11,7 +11,8 @@ The key features are:
 * Using introspection to build the option parser based on your application code
 * Handling unspecified options
 * Automatic generation of  usage and help texts
-* Automatic validation of mandatory options (not yet implemented)
+* Automatic validation of mandatory options
+* Automatic validation of option values (numbers, files, directories)
 
 ## Out-of-scope (for now)
 
@@ -45,6 +46,20 @@ fun main (args:Array<String>) {
     println("Modern: ${kli.modernFlag.isDefined}")
 }
 ```
+
+## Validation
+
+kotlin-kli can automatically validate the option values during or after the argument parsing by passing the option
+validate parameter, e.g.
+```kotlin
+kli.parse(args, validate=true)
+```
+
+Supported validation rules are:
+* Mandatory/option values 
+* Value classes: Integers, Decimals 
+* Readable/Writable files
+* Readable/Writable directories
 
 ## Help text
 

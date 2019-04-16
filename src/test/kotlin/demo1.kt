@@ -1,7 +1,6 @@
-import de.csou.arch.kli.*
-import org.chisou.arch.kli.FlagOption
-import org.chisou.arch.kli.Kli
-import org.chisou.arch.kli.StringOption
+import org.chisou.arch.kli.*
+
+import java.io.File
 
 fun main (args:Array<String>) {
 
@@ -18,7 +17,8 @@ fun main (args:Array<String>) {
     }
 
     kli.parse(args)
-    println("Input file: ${kli.stringOption.value}")
+    File("")
+    println("Input file: ${kli.stringOption.value.length}")
     println("Progressive: ${kli.progressiveFlag.isDefined}")
     println("Modern: ${kli.modernFlag.isDefined}")
 }

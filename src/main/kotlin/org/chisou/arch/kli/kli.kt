@@ -6,13 +6,17 @@ import kotlin.system.exitProcess
 
 abstract class Kli  {
 
-	private enum class ExitCode(val n:Int) { ANY_ERROR(1), CLI_ERROR(2)	}
-	private val logger = LoggerFactory.getLogger("de.csou.arch.kli")
+	companion object {
+		internal const val LOGGER_NAME = "org.chisou.arch.kli"
+	}
+
+	private enum class ExitCode(val num:Int) { NO_ERROR(0), ANY_ERROR(1), CLI_ERROR(2)	}
+	private val logger = LoggerFactory.getLogger(LOGGER_NAME)
 
 	private val mutableValues = mutableListOf<String>()
 	val values:List<String> = mutableValues
 
-	val options:List<Option> by lazy {
+	open val options:List<Option> by lazy {
 		this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>() }
 
 	fun parse (args:Array<String>, validate:Boolean=false) {
@@ -97,11 +101,15 @@ abstract class Kli  {
 					}
 					// check if there is no additional argument to use as option value
 					// (to prevent a 'out of bounds' exception)
-					if ( argsIndex >= args.size ) {
+					if ( argsIndex >= args.size-1 ) {
 						logger.error("Unable to find value string for option '${option.name}'. Ignored.")
 						return argsIndex + 1
 					}
-					option.parseValue( args[argsIndex + 1] )
+					// parse the next argument as a whole as the value
+					val value = args[argsIndex + 1]
+					if (value.startsWith('-'))
+						logger.info("Suspicious option value '$value'. Looks like another option.")
+					option.parseValue( value )
 					option.isDefined = true
 					if(validate && !option.isValid()) {
 						logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}" )
@@ -144,11 +152,11 @@ abstract class Kli  {
 			val helpOption = options.find{ it is HelpOption } as HelpOption?
 			if (!valid) {
 				helpOption?.printShortHelp(options)
-				exitProcess(2)
+				exitProcess(ExitCode.CLI_ERROR.num)
 			}
 			if ( helpOption!=null && helpOption.isDefined ) {
 				helpOption.printLongHelp(options)
-				exitProcess(0)
+				exitProcess(ExitCode.NO_ERROR.num)
 			}
 		}
 

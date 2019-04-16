@@ -20,17 +20,18 @@ val junitRunnerVersion = "3.3.1"
 repositories {
     mavenCentral()
     jcenter()
+    mavenLocal()
 }
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
     implementation(kotlin("reflect"))
     implementation("org.slf4j:slf4j-api:$slf4jVersion")
-
-    runtime("org.slf4j:slf4j-simple:$slf4jVersion")
+//    runtime ("org.slf4j:slf4j-simple:$slf4jVersion")
 
     testImplementation("io.kotlintest:kotlintest:$kotlintestVersion")
     testImplementation("org.amshove.kluent:kluent:$kluentVersion")
+    testImplementation("org.chisou.test:slf4j-mockito:1.1")
 
     testRuntime("io.kotlintest:kotlintest-runner-junit5:$junitRunnerVersion")
 }
