@@ -6,7 +6,7 @@ import org.amshove.kluent.`should be`
 import org.amshove.kluent.`should equal`
 import org.chisou.arch.kli.KliMock.Companion.kli
 import org.mockito.Mockito
-import org.slf4j.impl.MockLoggerFactory
+import org.slf4j.impl.MockitoLoggerFactory
 
 
 class KliMock ( override val options:List<Option>) : Kli() {
@@ -22,6 +22,8 @@ class KliMock ( override val options:List<Option>) : Kli() {
 
 class KliSpecs : FreeSpec ({
 
+	val mockLogger = MockitoLoggerFactory.getSingleton().getLogger(Kli.LOGGER_NAME)
+
     fun flag (short:Char, long:String?=null) = FlagOption(short.toString(),short,long)
 	fun flag (long:String) = FlagOption(long,null,long)
 	fun string (short:Char, long:String?=null) = StringOption("",short.toString(),short,long)
@@ -31,6 +33,9 @@ class KliSpecs : FreeSpec ({
 
 	fun String.toArgs() = this.split( " " ).toTypedArray()
 
+	class TestData( val line:String, val desc:String ) {
+		val args = line.toArgs()
+	}
 
 	"Parsing non-option values" - {
 
@@ -50,11 +55,7 @@ class KliSpecs : FreeSpec ({
 		}
 	}
 
-	"Parsing one-character options" - {
-
-		class TestData( val line:String, val desc:String ) {
-			val args = line.toArgs()
-		}
+	"Parsing one-character (short) options" - {
 
 		"Given a couple of defined flags" - {
 
@@ -93,7 +94,6 @@ class KliSpecs : FreeSpec ({
 
 			"... when the value appears to be a option" {
 				val kli = kli(string('a'))
-				val mockLogger = MockLoggerFactory.instance.getLogger(Kli.LOGGER_NAME)
 				Mockito.reset(mockLogger) // have to do this as it is a single logger for all instances
 				kli.parse("-a -b".toArgs())
 				verify(mockLogger).info(argThat{contains("'-b'")})
@@ -184,6 +184,104 @@ class KliSpecs : FreeSpec ({
 					kli.b.value `should equal` "3"
 				}
 			}
+		}
+
+	}
+
+	"Parsing long options" - {
+
+		"Given a couple of flag options ..." - {
+
+			"Flags should be detected in any order:" - {
+				val lines = listOf( "--aaa --bbb", "--bbb --aaa" )
+				lines.forEach{ line ->
+					"Line '$line'" {
+						val kli = kli(flag("aaa"), flag("bbb"))
+						kli.parse(line.toArgs())
+						kli.option["aaa"]?.isDefined `should be` true
+						kli.option["bbb"]?.isDefined `should be` true
+					}
+				}
+			}
+
+			"Missing flags should be marked as undefined:" - {
+				val lines = listOf( "--aaa --ccc", "--ccc --aaa" )
+				lines.forEach{ line ->
+					"Line '$line'" {
+						val kli = kli(flag("aaa"), flag("bbb"), flag("ccc"))
+						kli.parse(line.toArgs())
+						kli.option["aaa"]?.isDefined `should be` true
+						kli.option["bbb"]?.isDefined `should be` false
+						kli.option["ccc"]?.isDefined `should be` true
+					}
+				}
+			}
+
+			"Unknown options/flags should be ignored and reported/logged:" - {
+				val lines = listOf( "--aaa --xxx --ccc", "--xxx --ccc --aaa","--aaa --ccc --xxx",
+					"--xxx=abc --aaa --ccc", "--aaa --xxx abc --ccc" )
+				lines.forEach{ line ->
+					"Line '$line'" {
+						val kli = kli(flag("aaa"), flag("bbb"), flag("ccc"))
+						Mockito.reset(mockLogger)
+						kli.parse(line.toArgs())
+						verify(mockLogger).warn(argThat{contains("xxx") && contains("ignore")})
+						verify(mockLogger, never()).error(any())
+						kli.option["aaa"]?.isDefined `should be` true
+						kli.option["bbb"]?.isDefined `should be` false
+						kli.option["ccc"]?.isDefined `should be` true
+					}
+				}
+			}
+
+//			"uncalled for values to flags"
+
+			"Value options should be parsed in all styles and order:" - {
+				val lines = listOf( "--aaa=a --bbb b", "--bbb=b --aaa a" )
+				lines.forEach{ line ->
+					"Line '$line'" {
+						val aaa = string("aaa")
+						val bbb = string("bbb")
+						val kli = kli(aaa, bbb)
+
+						kli.parse(line.toArgs())
+						aaa.isDefined `should be` true
+						bbb.isDefined `should be` true
+						aaa.value `should equal` "a"
+						bbb.value `should equal` "b"
+					}
+				}
+			}
+
+			"Options with with missing values are reported & ignored:" - {
+				val lines = listOf( "--aaa= --bbb", "--bbb= --aaa" )
+				lines.forEach{ line ->
+					"Line '$line'" {
+						val aaa = string("aaa")
+						val bbb = string("bbb")
+						val kli = kli(aaa, bbb)
+
+						Mockito.reset(mockLogger)
+						kli.parse(line.toArgs())
+						verify(mockLogger).error(argThat{toUpperCase().contains("AAA") && toUpperCase().contains("IGNORE")})
+						aaa.isDefined `should be` false
+						bbb.isDefined `should be` false
+					}
+				}
+
+				"And suspicious looking values are reported (but used)" {
+					val aaa = string("aaa")
+					val kli = kli(aaa)
+
+					Mockito.reset(mockLogger)
+					kli.parse("--aaa --bbb".toArgs())
+					verify(mockLogger).info(argThat{toUpperCase().contains("AAA") && toUpperCase().contains("--BBB")})
+					aaa.isDefined `should be` true
+					aaa.value `should equal` "--bbb"
+				}
+
+			}
+
 		}
 
 	}

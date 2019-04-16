@@ -31,7 +31,7 @@ dependencies {
 
     testImplementation("io.kotlintest:kotlintest:$kotlintestVersion")
     testImplementation("org.amshove.kluent:kluent:$kluentVersion")
-    testImplementation("org.chisou.test:slf4j-mockito:1.1")
+    testImplementation("org.chisou.test:slf4j-mockito:1.2")
 
     testRuntime("io.kotlintest:kotlintest-runner-junit5:$junitRunnerVersion")
 }

@@ -51,17 +51,19 @@ abstract class Kli  {
 							optionString.substringAfter('=')
 						} else {
 							j += 1
-							// todo: check for AIOOB
-							args[j]
+							if ( j < args.size) args[j] else ""
 						}
 				if (optionValue.isBlank()) {
 					logger.error("Unable to find value string for option '${option.name}'. Ignored.")
-				}
-				option.isDefined = true
-				option.parseValue(optionValue)
-				if(validate && !option.isValid()) {
-					logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}" )
-					valid = false
+				} else {
+					if (optionValue.startsWith('-'))
+						logger.info("Suspicious value '$optionValue' for option '${option.name}'. Looks like another option.")
+					option.isDefined = true
+					option.parseValue(optionValue)
+					if (validate && !option.isValid()) {
+						logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}")
+						valid = false
+					}
 				}
 				return j + 1
 			}
