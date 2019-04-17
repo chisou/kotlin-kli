@@ -1,16 +1,23 @@
 package org.chisou.arch.kli
 
-import org.slf4j.LoggerFactory
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.system.exitProcess
 
+import org.slf4j.LoggerFactory
+
+
 abstract class Kli  {
+
+	object ExitCode {
+		const val NO_ERROR  = 0
+		const val ANY_ERROR = 1
+		const val CLI_ERROR = 2
+	}
 
 	companion object {
 		internal const val LOGGER_NAME = "org.chisou.arch.kli"
 	}
 
-	private enum class ExitCode(val num:Int) { NO_ERROR(0), ANY_ERROR(1), CLI_ERROR(2)	}
 	private val logger = LoggerFactory.getLogger(LOGGER_NAME)
 
 	private val mutableValues = mutableListOf<String>()
@@ -61,7 +68,7 @@ abstract class Kli  {
 					option.isDefined = true
 					option.parseValue(optionValue)
 					if (validate && !option.isValid()) {
-						logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}")
+						logger.error("Invalid value for option '${option.name}': ${option.invalidityHint()}")
 						valid = false
 					}
 				}
@@ -114,7 +121,7 @@ abstract class Kli  {
 					option.parseValue( value )
 					option.isDefined = true
 					if(validate && !option.isValid()) {
-						logger.error("Invalid value for option '${option.name}: ${option.invalidityHint()}" )
+						logger.error("Invalid value for option '${option.name}': ${option.invalidityHint()}" )
 						valid = false
 					}
 					return argsIndex + 2
@@ -128,10 +135,12 @@ abstract class Kli  {
 		var i = 0
 		while ( i < args.size ) {
 			val arg = args[i]
-			if ( arg[0] == '-' ) {
+			if ( arg.isNotEmpty() && arg[0] == '-' ) {
 				if ( arg[1] == '-' ) {
-					if ( arg.length == 2 )
-						return
+					if ( arg.length == 2 ) {
+						mutableValues.addAll(args.copyOfRange(i + 1, args.size))
+						i = args.size
+					}
 					i = handleLongOption( args, i, arg.substring(2) )
 				} else {
 					i = handleShortOption( args, i )
@@ -154,11 +163,11 @@ abstract class Kli  {
 			val helpOption = options.find{ it is HelpOption } as HelpOption?
 			if (!valid) {
 				helpOption?.printShortHelp(options)
-				exitProcess(ExitCode.CLI_ERROR.num)
+				exitProcess(ExitCode.CLI_ERROR)
 			}
 			if ( helpOption!=null && helpOption.isDefined ) {
 				helpOption.printLongHelp(options)
-				exitProcess(ExitCode.NO_ERROR.num)
+				exitProcess(ExitCode.NO_ERROR)
 			}
 		}
 

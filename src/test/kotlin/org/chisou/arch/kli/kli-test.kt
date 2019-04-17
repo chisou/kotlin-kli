@@ -7,6 +7,8 @@ import org.amshove.kluent.`should equal`
 import org.chisou.arch.kli.KliMock.Companion.kli
 import org.mockito.Mockito
 import org.slf4j.impl.MockitoLoggerFactory
+import java.security.Permission
+import kotlin.test.assertTrue
 
 
 class KliMock ( override val options:List<Option>) : Kli() {
@@ -20,6 +22,14 @@ class KliMock ( override val options:List<Option>) : Kli() {
 	val stringOption : Map<String,StringOption> = options.filterIsInstance<StringOption>().associateBy { it.description }
 }
 
+class ExitException(val status:Int) : SecurityException()
+
+class NoExitSecurityManager : SecurityManager() {
+	override fun checkPermission(perm: Permission?) {}
+	override fun checkPermission(perm: Permission?, context: Any?) {}
+	override fun checkExit(status:Int) { super.checkExit(status); throw ExitException(status) }
+}
+
 class KliSpecs : FreeSpec ({
 
 	val mockLogger = MockitoLoggerFactory.getSingleton().getLogger(Kli.LOGGER_NAME)
@@ -28,14 +38,21 @@ class KliSpecs : FreeSpec ({
 	fun flag (long:String) = FlagOption(long,null,long)
 	fun string (short:Char, long:String?=null) = StringOption("",short.toString(),short,long)
 	fun string (long:String) = StringOption("",long,null,long)
+	fun int (short:Char, long:String?=null) = IntegerOption(short.toString(),short,long)
+	fun int (long:String) = IntegerOption(long,null,long)
 	fun mstring (short:Char, long:String?=null) = StringOption("",short.toString(),short,long,true)
 	fun mstring (long:String) = StringOption("",long,null,long,true)
 
 	fun String.toArgs() = this.split( " " ).toTypedArray()
 
+	fun String.containsAll (vararg strings:String) : Boolean = !strings.map{this.contains(it)}.contains(false)
+
+
 	class TestData( val line:String, val desc:String ) {
 		val args = line.toArgs()
 	}
+
+	System.setSecurityManager(NoExitSecurityManager())
 
 	"Parsing non-option values" - {
 
@@ -278,6 +295,51 @@ class KliSpecs : FreeSpec ({
 					verify(mockLogger).info(argThat{toUpperCase().contains("AAA") && toUpperCase().contains("--BBB")})
 					aaa.isDefined `should be` true
 					aaa.value `should equal` "--bbb"
+				}
+
+			}
+
+			"Missing mandatory options should be reported" - {
+
+				"During parse when using the 'validate' argument" {
+					val kli = kli(mstring("aaa"), mstring("bbb"))
+
+					Mockito.reset(mockLogger)
+					try {
+						kli.parse("".toArgs(), validate = true)
+						assertTrue { false }
+					} catch (e:ExitException) {
+						e.status `should be` 2
+					}
+					verify(mockLogger).error(argThat{matches(".*aaa.*(defined|missing).*".toRegex())})
+					verify(mockLogger).error(argThat{matches(".*bbb.*(defined|missing).*".toRegex())})
+				}
+			}
+
+			"Options that cannot be parsed ..." - {
+
+				fun kli() = kli(int("aaa"), int("bbb"))
+				val args = "--aaa=x --bbb y".toArgs()
+
+				"Should be reported & ignored during parsing" {
+					val kli = kli()
+					Mockito.reset(mockLogger)
+					kli.parse(args)
+					kli.option["aaa"]?.isDefined `should be` false
+					kli.option["bbb"]?.isDefined `should be` false
+				}
+
+				"Should cause the parsing to exit when using the 'validate' argument" {
+					val kli = kli()
+					try {
+						Mockito.reset(mockLogger)
+						kli.parse(args, validate=true)
+						assertTrue { false }
+					} catch (e:ExitException) {
+						e.status `should be` 2
+					}
+					verify(mockLogger).error(argThat{containsAll("bbb", "nvalid")})
+					verify(mockLogger).error(argThat{containsAll("aaa", "nvalid")})
 				}
 
 			}

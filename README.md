@@ -10,9 +10,10 @@ The key features are:
   (both long versions `--long-option` and short options`-x`)
 * Using introspection to build the option parser based on your application code
 * Handling unspecified options
-* Automatic generation of  usage and help texts
+* Automatic generation of usage and help texts
 * Automatic validation of mandatory options
 * Automatic validation of option values (numbers, files, directories)
+* Handling of arbitrary ('non optionized') inputs
 
 ## Out-of-scope (for now)
 
@@ -35,9 +36,9 @@ import de.csou.arch.kli.*
 fun main (args:Array<String>) {
 
     val kli = object:Kli() {
-        val fileOption = StringOption(name="File", description="The input file to read.", shortId='f', longId="input-file")
-        val progressiveFlag = FlagOption("Progressive", "Whether to read the file in progressive mode", 'p', "progressive")
-        val modernFlag = FlagOption("Modern", "Whether to read the file in modern mode.", 'm', "modern")
+        val fileOption = ReadableFileOption(description="The input file to read.", shortId='f', longId="input-file")
+        val progressiveFlag = FlagOption("Whether to read the file in progressive mode", 'p', "progressive")
+        val modernFlag = FlagOption("Whether to read the file in modern mode.", 'm', "modern")
     }
 
     kli.parse(args)
@@ -57,7 +58,7 @@ kli.parse(args, validate=true)
 
 Supported validation rules are:
 * Mandatory/option values 
-* Value classes: Integers, Decimals 
+* Value classes: Strings, Integers, Decimals 
 * Readable/Writable files
 * Readable/Writable directories
 

@@ -78,7 +78,6 @@ class ReadableFileOption (description:String, shortId:Char?=null, longId:String?
 	FileOption(description, shortId, longId, isMandatory)
 {
 	override fun parse (value:String ) = with(super.parse(value)) {
-		val f = this
 		if (this.isValid() && !this.value?.canRead()!! ) ParseResult<File>(null, "Not readable.")
 		else this // for both invalid and valud files
 	}
