@@ -176,7 +176,10 @@ class KliSpecs : FreeSpec ({
 						val a = FlagOption("", 'a', "")
 						val b = FlagOption("", 'b', "")
 					}
+					Mockito.reset(mockLogger)
 					kli.parse(testData.args)
+					verify(mockLogger).warn(argThat{contains("x")})
+					verify(mockLogger, never()).error(any())
 					assert(kli.a.isDefined)
 					assert(kli.b.isDefined)
 				}
@@ -194,7 +197,10 @@ class KliSpecs : FreeSpec ({
 						val a = StringOption("", "", 'a', "")
 						val b = StringOption("", "", 'b', "")
 					}
+					Mockito.reset(mockLogger)
 					kli.parse(testData.args)
+					verify(mockLogger).warn(argThat{contains("x")})
+					verify(mockLogger, never()).error(any())
 					kli.a.isDefined `should be` true
 					kli.b.isDefined `should be` true
 					kli.a.value `should equal` "1"
