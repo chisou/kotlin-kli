@@ -197,7 +197,7 @@ abstract class Kli()  {
 	fun printLongHelp () =
 		helpOption?.printLongHelp(options)
 
-	fun checkArguments (vararg names:String, fail:Boolean) {
+	fun checkArguments (vararg names:String, fail:Boolean=false) {
 		if (values.isEmpty()) {
 			error("Missing positional arguments.", fail)
 		} else if (values.size < names.size) {
@@ -205,13 +205,14 @@ abstract class Kli()  {
 			if (n_missing == 1) { // just one argument missing
 				error("Argument '${names.last()}' must be provided.", fail)
 			} else { // multiple arguments are missing
-				val missingNames = names.copyOfRange(names.size - n_missing, names.size + 1)
-				error("Missing positional arguments: ${missingNames}", fail)
+				val missingNames = names.copyOfRange(names.size - n_missing, names.size)
+				error("Missing positional arguments: ${missingNames.joinToString()}", fail)
 			}
 		}
 	}
 
 	fun error (message:String, fail:Boolean) {
+		valid = false
 		logger.error(message)
 		if (fail) throw RuntimeException(message)
 	}

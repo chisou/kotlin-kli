@@ -8,9 +8,7 @@ import org.amshove.kluent.`should equal`
 import org.chisou.arch.kli.KliMock.Companion.kli
 import org.mockito.Mockito
 import org.slf4j.impl.MockitoLoggerFactory
-import java.security.Permission
 import kotlin.test.assertFailsWith
-import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 
@@ -37,11 +35,6 @@ class KliSpecs : FreeSpec ({
 	fun int (long:String) = IntegerOption(long,null,long)
 	fun mstring (short:Char, long:String?=null) = StringOption("",short.toString(),short,long,true)
 	fun mstring (long:String) = StringOption("",long,null,long,true)
-
-	fun String.toArgs() = this.split( " " ).toTypedArray()
-
-	fun String.containsAll (vararg strings:String) : Boolean = !strings.map{this.contains(it)}.contains(false)
-
 
 	class TestData( val line:String, val desc:String ) {
 		val args = line.toArgs()
