@@ -1,4 +1,5 @@
 import org.chisou.arch.kli.*
+import kotlin.system.exitProcess
 
 fun main (args:Array<String>) {
 
@@ -14,8 +15,14 @@ fun main (args:Array<String>) {
         val progressiveFlag = FlagOption("Whether to process the string in progressive mode", null, "progressive")
         val modernFlag = FlagOption("Whether to process the string in modern mode.", 'm')
     }
-    // alternative 1, automatic help + options checks
+
     kli.parse(args, validate=true)
-    // alternative 2, explicit help + option checks
-    if( kli.helpOption.isDefined ) kli.helpOption.printLongHelp(kli.options)
+    if(kli.isValid()) {
+        kli.printShortHelp()
+        exitProcess(Kli.ExitCode.CLI_ERROR)
+    }
+    if( kli.helpOption.isDefined ) {
+        kli.printLongHelp()
+        exitProcess(Kli.ExitCode.NO_ERROR)
+    }
 }

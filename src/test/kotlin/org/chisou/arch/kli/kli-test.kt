@@ -3,11 +3,14 @@ package org.chisou.arch.kli
 import com.nhaarman.mockitokotlin2.*
 import io.kotlintest.specs.FreeSpec
 import org.amshove.kluent.`should be`
+import org.amshove.kluent.`should contain none`
 import org.amshove.kluent.`should equal`
 import org.chisou.arch.kli.KliMock.Companion.kli
 import org.mockito.Mockito
 import org.slf4j.impl.MockitoLoggerFactory
 import java.security.Permission
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 
@@ -20,14 +23,6 @@ class KliMock ( override val options:List<Option>) : Kli() {
 	val option = options.associateBy { it.description }
 	val flagOption : Map<String,FlagOption> = options.filterIsInstance<FlagOption>().associateBy { it.description }
 	val stringOption : Map<String,StringOption> = options.filterIsInstance<StringOption>().associateBy { it.description }
-}
-
-class ExitException(val status:Int) : SecurityException()
-
-class NoExitSecurityManager : SecurityManager() {
-	override fun checkPermission(perm: Permission?) {}
-	override fun checkPermission(perm: Permission?, context: Any?) {}
-	override fun checkExit(status:Int) { super.checkExit(status); throw ExitException(status) }
 }
 
 class KliSpecs : FreeSpec ({
@@ -51,8 +46,6 @@ class KliSpecs : FreeSpec ({
 	class TestData( val line:String, val desc:String ) {
 		val args = line.toArgs()
 	}
-
-	System.setSecurityManager(NoExitSecurityManager())
 
 	"Parsing non-option values" - {
 
@@ -305,20 +298,32 @@ class KliSpecs : FreeSpec ({
 
 			}
 
-			"Missing mandatory options should be reported" - {
+			"Missing mandatory options ..." - {
 
-				"During parse when using the 'validate' argument" {
+				"should be ignored when the 'validate' argument is disabled" {
 					val kli = kli(mstring("aaa"), mstring("bbb"))
+					kli.parse("".toArgs(), validate=false)
+					kli.isValid() `should be` true
+				}
+
+				"should invalidate the parse result when using the 'validate' argument" {
+					val kli = kli(mstring("aaa"), mstring("bbb"))
+					kli.parse("".toArgs(), validate=true)
+					kli.isValid() `should be` false
+				}
+
+				"should cause the parse to fail when using the 'fail' argument" {
+					val kli = kli(mstring("aaa"))
 
 					Mockito.reset(mockLogger)
 					try {
-						kli.parse("".toArgs(), validate = true)
-						assertTrue { false }
-					} catch (e:ExitException) {
-						e.status `should be` 2
+						kli.parse("".toArgs(), validate=true, fail=true)
+						assertTrue(false)
+					} catch (ex:RuntimeException) {
+						verify(mockLogger).error(ex.message)
+					} catch (ex:Throwable) {
+						assertTrue(false)
 					}
-					verify(mockLogger).error(argThat{matches(".*aaa.*(defined|missing).*".toRegex())})
-					verify(mockLogger).error(argThat{matches(".*bbb.*(defined|missing).*".toRegex())})
 				}
 			}
 
@@ -327,25 +332,32 @@ class KliSpecs : FreeSpec ({
 				fun kli() = kli(int("aaa"), int("bbb"))
 				val args = "--aaa=x --bbb y".toArgs()
 
-				"Should be reported & ignored during parsing" {
+				"Should be completely ignored during parsing" {
 					val kli = kli()
 					Mockito.reset(mockLogger)
 					kli.parse(args)
+					kli.isValid() `should be` true
 					kli.option["aaa"]?.isDefined `should be` false
 					kli.option["bbb"]?.isDefined `should be` false
+					verify(mockLogger, never()).error(any())
 				}
 
-				"Should cause the parsing to exit when using the 'validate' argument" {
+				"Should be reported during parsing and invalidate the result" {
 					val kli = kli()
-					try {
-						Mockito.reset(mockLogger)
-						kli.parse(args, validate=true)
-						assertTrue { false }
-					} catch (e:ExitException) {
-						e.status `should be` 2
-					}
-					verify(mockLogger).error(argThat{containsAll("bbb", "nvalid")})
+					Mockito.reset(mockLogger)
+					kli.parse(args, validate=true)
+					kli.isValid() `should be` false
 					verify(mockLogger).error(argThat{containsAll("aaa", "nvalid")})
+				}
+
+				"Should cause the parsing to exit when using the 'fail' argument" {
+					val kli = kli()
+					Mockito.reset(mockLogger)
+					val ex = assertFailsWith<RuntimeException> {
+						kli.parse(args, validate=true, fail=true)
+					}
+					verify(mockLogger).error(ex.message)
+					ex.message!! `should contain none` listOf("bbb")
 				}
 
 			}
