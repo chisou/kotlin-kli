@@ -26,7 +26,7 @@ fun main (args:Array<String>) {
             } else {
                 cp.parseLastArgument(WritableFileOptionParser())
             }
-        println("Copying $sourceFiles to $targetFile")
+        println("Copying ${sourceFiles.joinToString(" ")} to $targetFile")
     } catch (ex:RuntimeException) {
         cp.error(ex.message!!, fail=false)
         exitProcess(Kli.ExitCode.CLI_ERROR)
