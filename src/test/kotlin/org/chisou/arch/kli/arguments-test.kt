@@ -26,7 +26,7 @@ class KliArgumentsSpec : FreeSpec({
         kli.isValid() `should be` true
     }
 
-    "Partially missing positional arguments are reported and considered invalid" {
+    "Missing positional arguments are reported and considered invalid" {
         val kli = object : Kli() {}
         Mockito.reset(mockLogger)
         kli.parse(args=arrayOf())
@@ -43,6 +43,15 @@ class KliArgumentsSpec : FreeSpec({
         kli.isValid() `should equal` false
         verify(mockLogger).error(argThat{containsAll("arg2", "issing")})
         verify(mockLogger).error(argThat{containsAll("arg3", "issing")})
+    }
+
+    "A single missing positional arguments is reported by its' name" {
+        val kli = object : Kli() {}
+        Mockito.reset(mockLogger)
+        kli.parse("1 2".toArgs())
+        kli.checkArguments("arg1", "arg2", "arg3")
+        kli.isValid() `should equal` false
+        verify(mockLogger).error(argThat{containsAll("arg3", "must be provided")})
     }
 
     "When checking positional arguments with the 'fail' argument an exception will be thrown" {
