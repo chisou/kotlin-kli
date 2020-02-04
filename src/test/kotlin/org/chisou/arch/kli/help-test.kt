@@ -20,6 +20,15 @@ class HelpSpecs : FreeSpec({
             this.toString().toLowerCase()
         }
 
+    "Given a Kli instance with help option ..." - {
+        val kli = object:Kli(){
+            val helpOption = StandardHelpOption()
+        }
+        "It should reference it as 'helpOption'" {
+            kli.internalHelpOptionReference `should be` kli.helpOption
+        }
+    }
+
     "Given a default StandardHelpOption ..." - {
         val helpOption = StandardHelpOption()
         val shortText = getShortHelp(helpOption)

@@ -30,7 +30,7 @@ abstract class Kli()  {
 	val lastValue:String
 		get() = values.last()
 
-	private val helpOption:HelpOption? by lazy {
+	internal val internalHelpOptionReference:HelpOption? by lazy {
 		this.options.find{ it is HelpOption } as HelpOption? }
 
 	open val options:List<Option> by lazy {
@@ -192,10 +192,10 @@ abstract class Kli()  {
 	fun isValid () : Boolean = valid
 
 	fun printShortHelp () =
-		helpOption?.printShortHelp(options)
+		internalHelpOptionReference?.printShortHelp(options)
 
 	fun printLongHelp () =
-		helpOption?.printLongHelp(options)
+		internalHelpOptionReference?.printLongHelp(options)
 
 	fun checkArguments (vararg names:String, fail:Boolean=false) {
 		if (values.isEmpty()) {
