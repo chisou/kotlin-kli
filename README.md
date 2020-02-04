@@ -13,7 +13,8 @@ The key features are:
 * Automatic generation of usage and help texts
 * Automatic validation of mandatory options
 * Automatic validation of option values (numbers, files, directories)
-* Handling of arbitrary ('non optionized') inputs
+* Proper parsing and validation of positional arguments
+* Automatic recognition of the *end of options* delimiter (`--`)
 
 ## Out-of-scope (for now)
 
@@ -61,6 +62,16 @@ Supported validation rules are:
 * Value classes: Strings, Integers, Decimals 
 * Readable/Writable files
 * Readable/Writable directories
+
+## Positional arguments
+
+kotlin-kli automatically recognizes *non-optionized* arguments as so called positional arguments. Positional arguments
+can be read individually or using logical grouping (first, last, all-but-first, all-but-last). These access functions
+also support value validation and type casting, e.g.:
+```kotlin
+val arg1:String = kli.parseFirstArgument(StringParser())
+val lastArgs:List<Double> = kli.parseTailArguments(DoubleParser())
+```
 
 ## Help text
 
