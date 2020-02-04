@@ -3,6 +3,7 @@ package org.chisou.arch.kli
 import com.nhaarman.mockitokotlin2.*
 import io.kotlintest.specs.FreeSpec
 import org.amshove.kluent.`should be`
+import org.amshove.kluent.`should contain all`
 import org.amshove.kluent.`should contain none`
 import org.amshove.kluent.`should equal`
 import org.chisou.arch.kli.KliMock.Companion.kli
@@ -54,6 +55,28 @@ class KliSpecs : FreeSpec ({
 				val kli = object : Kli() {}
 				kli.parse(args=arrayOf( "value1", "value2" ))
 				assert(kli.values == listOf("value1", "value2"))
+			}
+		}
+		"Given an parse end (--) token" - {
+			"It should collect all arguments after the token" {
+				val kli = kli(flag('a'),string("bb"))
+				kli.parse("-a --bb=b -- -x --y z".toArgs())
+				kli.option["a"]?.isDefined `should equal` true
+				kli.option["bb"]?.isDefined `should equal` true
+				kli.values `should contain all` listOf("-x", "--y", "z")
+			}
+			"It should also work with only the end token" {
+				val kli = object : Kli() {}
+				kli.parse("--".toArgs())
+				kli.values.isEmpty() `should equal` true
+
+			}
+			"It should also work with zero arguments after the token" {
+				val kli = kli(flag('a'),string("bb"))
+				kli.parse("-a --bb=b --".toArgs())
+				kli.option["a"]?.isDefined `should equal` true
+				kli.option["bb"]?.isDefined `should equal` true
+				kli.values.isEmpty() `should equal` true
 			}
 		}
 	}
