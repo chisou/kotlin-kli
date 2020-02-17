@@ -6,13 +6,13 @@ import kotlin.reflect.full.declaredMemberProperties
 import org.slf4j.LoggerFactory
 import java.lang.RuntimeException
 
-
 abstract class Kli()  {
 
 	companion object {
 		internal const val LOGGER_NAME = "org.chisou.arch.kli" // we need this available to be able to mock the logger
 	}
 
+	/** Standard POSIX error codes. */
 	object ExitCode {
 		const val NO_ERROR  = 0
 		const val ANY_ERROR = 1
@@ -36,6 +36,18 @@ abstract class Kli()  {
 	open val options:List<Option> by lazy {
 		this.javaClass.kotlin.declaredMemberProperties.map{ it.get(this) }.filterIsInstance<Option>() }
 
+	/** Parse a command line given as array of string tokens.
+	 *
+	 *  By default, this function will only parse and automatically validate. The behavior can be changed through flags.
+	 *  The result of the parse process can be checked through the [isValid] property.
+	 *
+	 *  @param validate enable/disable validation of command line options during parse
+	 *  	If enabled, will both check if mandatory options are provided and validate the type of parsed options.
+	 *  @param strict  enable/disable strict parse mode
+	 *  	If enabled, parsing will be strict and report wrongly formatted option strings.
+	 *  @param fail enable/disable immediate failing in case of errors
+	 *  	If enabled, any error during parsing will result in an immediate [RuntimeException] being through.
+	 */
 	fun parse (args:Array<String>, validate:Boolean=false, strict:Boolean=false, fail:Boolean=false)  {
 		valid = true
 		mutableValues.clear()
@@ -52,10 +64,6 @@ abstract class Kli()  {
 		fun error (message:String) {
 			valid = false
 			error(message, fail)
-		}
-
-		fun info (message:String) {
-			logger.info(message)
 		}
 
 		// all option handling sub routines potentially move the pointer (index)
@@ -189,14 +197,29 @@ abstract class Kli()  {
 		}
 	}
 
+	/** Determine if the last parse process was successful.
+	 */
 	fun isValid () : Boolean = valid
 
+	/** Print a brief help message.
+	 *  This will result in a [NullPointerException] if no help option was specified.
+	 */
 	fun printShortHelp () =
 		internalHelpOptionReference?.printShortHelp(options)
 
+	/** Print a detailled help message.
+	 *  This will result in a [NullPointerException] if no help option was specified.
+	 */
 	fun printLongHelp () =
 		internalHelpOptionReference?.printLongHelp(options)
 
+	/** Check positional arguments.
+	 *  All tokens provided after the last option are considered to be _positional arguments_.
+	 *  This function is used to verify the number of such arguments provided.
+	 *
+	 *  @param names Sequence of expected arguments
+	 *  	The provided names are used within error messages only.
+	 */
 	fun checkArguments (vararg names:String, fail:Boolean=false) {
 		if (values.isEmpty()) {
 			error("Missing positional arguments.", fail)
@@ -211,17 +234,16 @@ abstract class Kli()  {
 		}
 	}
 
-	fun error (message:String, fail:Boolean) {
-		valid = false
-		logger.error(message)
-		if (fail) throw RuntimeException(message)
-	}
-
-	fun warn (message:String, strict:Boolean, fail:Boolean) {
-		logger.warn(message)
-		if (strict && fail) throw RuntimeException(message)
-	}
-
+	/** Parse positional arguments.
+	 *
+	 *  @param fromIndex start index of the arguments to parse (inclusive)
+	 *  @param toIndex end index of the arguments to parse (exclusive)
+	 *  @param parser value parser to use (instance of [ValueParser])
+	 *  @param fail enable/disable immadiate failing in case of errors
+	 *  	If enabled, a [RuntimeException] will be thrown in case of parse errors
+	 *
+	 *  @return a typed list of the parsed arguments. `null` in case of errors.
+	 */
 	fun <T> parseArguments (fromIndex:Int, toIndex:Int, parser:ValueParser<T>, fail:Boolean):List<T>? {
 		val results = mutableListOf<T>()
 		values.subList(fromIndex, toIndex).forEach {
@@ -235,19 +257,69 @@ abstract class Kli()  {
 		return results
 	}
 
+	/** Parse all provided positional arguments.
+	 *
+	 *  @param parser value parser to use (instance of [ValueParser])
+	 *  @param fail enable/disable immadiate failing in case of errors
+	 *  	If enabled, a [RuntimeException] will be thrown in case of parse errors
+	 *
+	 *  @return a typed list of the parsed arguments. `null` in case of errors.
+	 */
 	fun <T> parseAllArguments (parser:ValueParser<T>, fail:Boolean=false) : List<T>? =
 		parseArguments(0, values.size, parser, fail)
 
+	/** Parse all but the last provided positional arguments.
+	 *
+	 *  @param parser value parser to use (instance of [ValueParser])
+	 *  @param fail enable/disable immadiate failing in case of errors
+	 *  	If enabled, a [RuntimeException] will be thrown in case of parse errors
+	 *
+	 *  @return a typed list of the parsed arguments. `null` in case of errors.
+	 */
 	fun <T> parseHeadArguments (parser:ValueParser<T>, fail:Boolean=false) : List<T>? =
 		parseArguments(0, values.size-1, parser, fail)
 
+	/** Parse all but the first provided positional arguments.
+	 *
+	 *  @param parser value parser to use (instance of [ValueParser])
+	 *  @param fail enable/disable immadiate failing in case of errors
+	 *  	If enabled, a [RuntimeException] will be thrown in case of parse errors
+	 *
+	 *  @return a typed list of the parsed arguments. `null` in case of errors.
+	 */
 	fun <T> parseTailArguments (parser:ValueParser<T>, fail:Boolean=false) : List<T>? =
 		parseArguments(1, values.size, parser, fail)
 
+	/** Parse the first provided positional argument.
+	 *
+	 *  @param parser value parser to use (instance of [ValueParser])
+	 *  @param fail enable/disable immadiate failing in case of errors
+	 *  	If enabled, a [RuntimeException] will be thrown in case of parse errors
+	 *
+	 *  @return a typed list of the parsed arguments. `null` in case of errors.
+	 */
 	fun <T> parseFirstArgument (parser:ValueParser<T>, fail:Boolean=false) : T? =
 		parseArguments(0, 1, parser, fail)?.first()
 
+	/** Parse the last provided positional argument.
+	 *
+	 *  @param parser value parser to use (instance of [ValueParser])
+	 *  @param fail enable/disable immadiate failing in case of errors
+	 *  	If enabled, a [RuntimeException] will be thrown in case of parse errors
+	 *
+	 *  @return a typed list of the parsed arguments. `null` in case of errors.
+	 */
 	fun <T> parseLastArgument (parser:ValueParser<T>, fail:Boolean=false) : T? =
 		parseArguments(values.size-1, values.size, parser, fail)?.first()
+
+	internal fun error (message:String, fail:Boolean) {
+		logger.error(message)
+		if (fail) throw RuntimeException(message)
+	}
+
+	internal fun warn (message:String, strict:Boolean, fail:Boolean) {
+		logger.warn(message)
+		if (strict && fail) throw RuntimeException(message)
+	}
 
 }
