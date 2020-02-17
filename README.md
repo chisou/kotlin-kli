@@ -3,6 +3,8 @@ The kotlin-kli libray offers sleek command line parsing for the Kotlin programmi
 
 It's primary goal is ease-of-use with minimal configuration overhead.
 
+[ ![Download](https://api.bintray.com/packages/chisou/maven/kotlin-kli/images/download.svg?version=1.3.1) ](https://bintray.com/chisou/maven/kotlin-kli/1.3.1/link)
+
 ## Features
 
 The key features are:
